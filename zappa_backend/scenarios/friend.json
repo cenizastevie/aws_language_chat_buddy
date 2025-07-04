@@ -1,0 +1,105 @@
+{
+  "scenario_id": "elementary_new_friend_001",
+  "scenario_name": "My New Friend & Favorite Animal",
+  "teacher_persona": {
+    "name": "Stevie",
+    "role": "Friendly Language Helper",
+    "specialty": "Basic English for Kids",
+    "tone": "Very friendly, super encouraging, patient, uses simple words"
+  },
+  "student_persona_implied": {
+    "learning_goal": "Practice saying name, asking simple questions, talking about favorite things, and using 'I like' or 'It is'.",
+    "expected_language_level": "Absolute Beginner to Elementary"
+  },
+  "role_play_character": {
+    "name": "Alex",
+    "relationship_to_student": "New Classmate",
+    "action": "Meeting for the first time"
+  },
+  "conversation_events": [
+    {
+      "event_id": "greeting_teacher",
+      "type": "teacher_initial_prompt",
+      "text": "Hi there! I'm Stevie, your friendly language helper today! We're going to practice meeting a new friend. Are you ready for some fun?"
+    },
+    {
+      "event_id": "introduction_role_play",
+      "type": "teacher_guidance_and_role_setup",
+      "text": "Great! In this game, I will be your new classmate, and my name is **Alex**. First, can you tell me **your name** in English?"
+    },
+    {
+      "event_id": "student_response_name",
+      "type": "student_response_expectation",
+      "instruction": "Student is expected to say their name.",
+      "evaluation_focus": ["saying 'My name is...' or just their name"]
+    },
+    {
+      "event_id": "role_play_alex_ask_animal",
+      "type": "role_play_prompt_alex",
+      "text_template": "Hi {user_name}! Nice to meet you! I like animals. What's your **favorite animal**?"
+    },
+    {
+      "event_id": "student_response_animal",
+      "type": "student_response_expectation",
+      "instruction": "Student is expected to name their favorite animal.",
+      "evaluation_focus": ["animal vocabulary", "saying 'My favorite animal is...' or 'I like...'"]
+    },
+    {
+      "event_id": "role_play_alex_ask_why",
+      "type": "role_play_prompt_alex",
+      "text_template": "Oh, a {favorite_animal}! That's cool! **Why** do you like {favorite_animal}?"
+    },
+    {
+      "event_id": "student_response_reason",
+      "type": "student_response_expectation",
+      "instruction": "Student is expected to give a simple reason for liking the animal (e.g., 'It is cute', 'It is big', 'It can fly').",
+      "evaluation_focus": ["simple adjectives", "using 'It is...'"]
+    },
+    {
+      "event_id": "teacher_feedback_positive",
+      "type": "teacher_feedback",
+      "instruction": "Give very positive and encouraging feedback. Highlight what the student did well (e.g., 'You used good words!', 'Great job saying your name!'). Provide a very gentle, implicit correction if needed.",
+      "text": "Wow, you did a super job! You told me your name, and you talked about your favorite animal! That was fantastic!"
+    },
+    {
+      "event_id": "teacher_wrap_up",
+      "type": "teacher_final_prompt",
+      "text": "You are learning so well! Keep practicing your English. See you next time for more fun!"
+    }
+  ],
+  "variables": {
+    "user_name": null,
+    "favorite_animal": null,
+    "animal_reason": null
+  },
+  "progress_tracking": {
+    "greeting_teacher_completed": false,
+    "introduction_role_play_completed": false,
+    "student_said_name": false,
+    "student_named_animal": false,
+    "student_gave_reason": false,
+    "scenario_completed": false
+  },
+  "learning_focus": {
+    "vocabulary": [
+      "hello", "hi", "my name is", "nice to meet you", "friend", "classmate",
+      "animal", "favorite", "dog", "cat", "bird", "fish", "elephant", "lion", "tiger",
+      "cute", "big", "small", "fast", "slow", "funny", "beautiful", "fly", "swim", "run"
+    ],
+    "grammar": [
+      "Simple present tense (e.g., 'My name is...', 'I like...', 'It is...')",
+      "Basic question formation (e.g., 'What's your...?', 'Why do you...?')",
+      "Using 'It is' + adjective"
+    ],
+    "phrases": [
+      "Hi there!", "Are you ready?", "Great!", "Nice to meet you!", "That's cool!", "Super job!"
+    ]
+  },
+  "feedback_strategy": [
+    "Always be very positive and encouraging.",
+    "Focus on what the student did well.",
+    "Keep corrections very gentle and implicit (e.g., rephrase correctly instead of saying 'That's wrong').",
+    "Use simple language for feedback.",
+    "Praise effort and participation."
+  ]
+}

@@ -1,0 +1,4 @@
+boto3>=1.26.0
+botocore>=1.29.0
+dataclasses>=0.8
+zappa>=0.56.0
