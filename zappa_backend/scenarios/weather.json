@@ -6,13 +6,12 @@
     "role": "Language Teacher",
     "specialty": "Conversational English, Weather Vocabulary",
     "tone": "Friendly, encouraging, patient"
-    // You could add more details here like "teaching_level": "beginner_intermediate"
   },
-  "student_persona_implied": { // How the teacher will perceive and interact with the student
+  "student_persona_implied": {
     "learning_goal": "Practice asking/answering about weather, using related vocabulary and common phrases.",
     "expected_language_level": "Beginner to Intermediate"
   },
-  "role_play_character": { // The character the teacher plays within the simulation
+  "role_play_character": {
     "name": "Stacy",
     "relationship_to_student": "Friend",
     "action": "Coming home to your city"
@@ -32,31 +31,28 @@
       "event_id": "simulation_question",
       "type": "role_play_prompt_stacy",
       "text_template": "Hello {name}, I'll be arriving in {city} at 8:00 AM. Do you know what the weather will be like when I arrive?"
-      // This template will be populated by the LLM (or your code) once 'name' and 'city' are known.
     },
     {
       "event_id": "simulation_response",
       "type": "student_response_expectation",
       "instruction": "Student is expected to provide weather information for their city.",
       "evaluation_focus": ["weather vocabulary", "future tense", "descriptive adjectives"]
-      // No 'text' here, as this is where the student speaks.
     },
     {
       "event_id": "teacher_feedback_1",
       "type": "teacher_feedback",
       "instruction": "Provide constructive feedback on the student's weather description, focusing on vocabulary and grammar, then ask for more details or a follow-up question related to weather."
     }
-    // You can add more events for deeper simulation, e.g., "follow_up_question_stacy", "student_response_2", "teacher_feedback_2"
   ],
   "variables": {
     "user_name": null,
     "user_city": null,
-    "current_weather_description": null // This could be filled by the LLM or an API call if you integrate one.
+    "current_weather_description": null
   },
-  "progress_tracking": { // Renamed for clarity: tracks the completion/status of events
+  "progress_tracking": {
     "greeting_completed": false,
     "introduction_completed": false,
-    "introduction_grammatically_correct": false // More specific for language learning
+    "introduction_grammatically_correct": false
   },
   "learning_focus": {
     "vocabulary": [

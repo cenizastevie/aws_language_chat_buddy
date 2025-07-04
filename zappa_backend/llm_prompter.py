@@ -57,27 +57,44 @@ class LLMPrompter:
             raise
     
     def _invoke_llm(self, prompt: str, max_tokens: int = 1000) -> str:
-        """Invoke AWS Bedrock LLM with the given prompt"""
+        """Invoke AWS Bedrock LLM with the given prompt, supporting both Claude and Titan."""
+        import os
         try:
-            body = {
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": max_tokens,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
+            region = os.environ.get('AWS_REGION', 'us-east-1')
+            model_id = self.model_id
+            if model_id.startswith('amazon.titan-text'):
+                # Titan Text models require 'inputText' and 'textGenerationConfig'
+                body = json.dumps({
+                    "inputText": prompt,
+                    "textGenerationConfig": {
+                        "maxTokenCount": max_tokens,
+                        "temperature": 0.2
                     }
-                ]
-            }
-            
-            response = self.bedrock_client.invoke_model(
-                modelId=self.model_id,
-                body=json.dumps(body)
-            )
-            
-            response_body = json.loads(response['body'].read())
-            return response_body['content'][0]['text']
-            
+                })
+                response = self.bedrock_client.invoke_model(
+                    modelId=model_id,
+                    body=body
+                )
+                response_body = json.loads(response['body'].read())
+                return response_body['results'][0]['outputText']
+            else:
+                # Default: Anthropic Claude
+                body = {
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": max_tokens,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                }
+                response = self.bedrock_client.invoke_model(
+                    modelId=model_id,
+                    body=json.dumps(body)
+                )
+                response_body = json.loads(response['body'].read())
+                return response_body['content'][0]['text']
         except Exception as e:
             logger.error(f"Error invoking LLM: {str(e)}")
             raise
