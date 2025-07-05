@@ -5,11 +5,11 @@
         "profile_name": "default",
         "project_name": "aws-language-chat-buddy",
         "runtime": "python3.11",
-        "s3_bucket": "zappa-deployments-aws-language-chat-buddy",
+        "s3_bucket": "your-zappa-deployments-bucket",
         "environment_variables": {
-            "MODEL_ID": "amazon.titan-text-lite-v1",
+            "MODEL_ID": "your-model-id",
             "AWS_REGION": "us-east-1",
-            "SECRET_KEY": "b6e1c7a2-4f8e-4e2a-9c3d-7f2b8e5a1c9f"
+            "SECRET_KEY": "your-secret-key"
         },
         "keep_warm": false,
         "timeout_seconds": 30,
@@ -21,11 +21,11 @@
         "profile_name": "default",
         "project_name": "aws-language-chat-buddy",
         "runtime": "python3.11",
-        "s3_bucket": "zappa-deployments-aws-language-chat-buddy-prod",
+        "s3_bucket": "your-zappa-deployments-bucket-prod",
         "environment_variables": {
-            "MODEL_ID": "amazon.titan-text-lite-v1",
+            "MODEL_ID": "your-model-id",
             "AWS_REGION": "us-east-1",
-            "SECRET_KEY": "b6e1c7a2-4f8e-4e2a-9c3d-7f2b8e5a1c9f"
+            "SECRET_KEY": "your-secret-key"
         },
         "keep_warm": false,
         "timeout_seconds": 30,

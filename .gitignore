@@ -1,0 +1,2 @@
+# Ignore Zappa settings (contains secrets)
+zappa_backend/zappa_settings.json
