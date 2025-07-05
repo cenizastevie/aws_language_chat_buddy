@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import apiService from '../services/apiService'
 
-const ChatInterface = () => {
+const ChatInterface = ({ isScenarioLoaded }) => {
   const [messages, setMessages] = useState([])
   const [currentInput, setCurrentInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -159,8 +159,6 @@ const ChatInterface = () => {
       setIsLoading(false)
     }
   }
-
-  const isScenarioLoaded = currentPrompt && currentPrompt !== 'No scenario loaded. Please load a scenario first.'
 
   return (
     <div className="chat-container">

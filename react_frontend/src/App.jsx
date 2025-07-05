@@ -18,7 +18,7 @@ function App() {
 
       <ScenarioManager onScenarioLoaded={handleScenarioLoaded} />
       
-      <ChatInterface />
+      <ChatInterface isScenarioLoaded={scenarioLoaded} />
     </div>
   )
 }

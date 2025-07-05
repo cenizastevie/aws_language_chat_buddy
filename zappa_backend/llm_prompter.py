@@ -1,10 +1,10 @@
 import json
 import boto3
 import logging
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-import re
 from enum import Enum
+from conversation_state import ConversationState
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,41 +26,37 @@ class EvaluationResult:
     next_prompt: Optional[str] = None
 
 class LLMPrompter:
-    def __init__(self, aws_region: str = 'us-east-1', model_id: str = 'anthropic.claude-3-sonnet-20240229-v1:0'):
+    def __init__(self, conversation_state: ConversationState = None, aws_region: str = 'us-east-1', model_id: str = 'anthropic.claude-3-sonnet-20240229-v1:0'):
         """
-        Initialize the LLM Prompter with AWS Bedrock client
+        Initialize the LLM Prompter with conversation state
         
         Args:
+            conversation_state: ConversationState instance (creates new if None)
             aws_region: AWS region for Bedrock
-            model_id: Model ID for the LLM
+            model_id: Model ID for Bedrock
         """
-        self.bedrock_client = boto3.client('bedrock-runtime', region_name=aws_region)
+        self.conversation_state = conversation_state or ConversationState()
+        self.aws_region = aws_region
         self.model_id = model_id
-        self.scenario_data = None
-        self.conversation_state = {}
-        self.current_event_index = 0
+        # Don't store bedrock_client as instance variable to avoid pickling issues
         
-    def load_scenario(self, scenario_file_path: str) -> None:
-        """Load scenario configuration from JSON file"""
+    def _get_bedrock_client(self):
+        """Get bedrock client (created fresh each time to avoid pickling)"""
+        return boto3.client('bedrock-runtime', region_name=self.aws_region)
+        
+    def initialize_scenario(self, scenario_name: str) -> None:
+        """Initialize a new scenario"""
         try:
-            with open(scenario_file_path, 'r', encoding='utf-8') as file:
-                self.scenario_data = json.load(file)
-                self.conversation_state = {
-                    'variables': self.scenario_data.get('variables', {}).copy(),
-                    'progress_tracking': self.scenario_data.get('progress_tracking', {}).copy(),
-                    'current_event_index': 0,
-                    'attempts': 0
-                }
-                logger.info(f"Loaded scenario: {self.scenario_data.get('scenario_name', 'Unknown')}")
+            self.conversation_state.initialize_scenario(scenario_name)
+            logger.info(f"Initialized scenario: {scenario_name}")
         except Exception as e:
-            logger.error(f"Error loading scenario: {str(e)}")
+            logger.error(f"Error initializing scenario: {str(e)}")
             raise
     
     def _invoke_llm(self, prompt: str, max_tokens: int = 1000) -> str:
         """Invoke AWS Bedrock LLM with the given prompt, supporting both Claude and Titan."""
-        import os
+        bedrock_client = self._get_bedrock_client()
         try:
-            region = os.environ.get('AWS_REGION', 'us-east-1')
             model_id = self.model_id
             if model_id.startswith('amazon.titan-text'):
                 # Titan Text models require 'inputText' and 'textGenerationConfig'
@@ -71,7 +67,7 @@ class LLMPrompter:
                         "temperature": 0.2
                     }
                 })
-                response = self.bedrock_client.invoke_model(
+                response = bedrock_client.invoke_model(
                     modelId=model_id,
                     body=body
                 )
@@ -89,7 +85,7 @@ class LLMPrompter:
                         }
                     ]
                 }
-                response = self.bedrock_client.invoke_model(
+                response = bedrock_client.invoke_model(
                     modelId=model_id,
                     body=json.dumps(body)
                 )
@@ -237,76 +233,37 @@ class LLMPrompter:
         """Update conversation state based on evaluation result"""
         if evaluation_result.is_valid:
             # Update variables
-            for key, value in evaluation_result.extracted_variables.items():
-                if key in self.conversation_state['variables']:
-                    self.conversation_state['variables'][key] = value
+            self.conversation_state.update_variables(evaluation_result.extracted_variables)
             
             # Move to next event
-            self.current_event_index += 1
-            self.conversation_state['current_event_index'] = self.current_event_index
-            self.conversation_state['attempts'] = 0
-            
-            # Update progress tracking
-            current_event = self.scenario_data['conversation_events'][self.current_event_index - 1]
-            event_id = current_event.get('event_id', '')
-            if event_id + '_completed' in self.conversation_state['progress_tracking']:
-                self.conversation_state['progress_tracking'][event_id + '_completed'] = True
+            self.conversation_state.advance_to_next_event()
         else:
             # Increment attempts
-            self.conversation_state['attempts'] += 1
+            self.conversation_state.increment_attempts()
     
     def get_current_prompt(self) -> str:
         """Get the current prompt for the conversation"""
-        if not self.scenario_data:
-            return "No scenario loaded. Please load a scenario first."
-        
-        events = self.scenario_data['conversation_events']
-        if self.current_event_index >= len(events):
-            return "Conversation completed! Great job!"
-        
-        current_event = events[self.current_event_index]
-        event_type = current_event.get('type', '')
-        
-        if event_type in ['teacher_initial_prompt', 'teacher_guidance_and_role_setup', 'teacher_final_prompt']:
-            return current_event.get('text', '')
-        
-        elif event_type == 'role_play_prompt_alex' or event_type == 'role_play_prompt_stacy':
-            # Handle template replacement
-            text_template = current_event.get('text_template', current_event.get('text', ''))
-            return self._replace_template_variables(text_template)
-        
-        elif event_type == 'student_response_expectation':
-            return f"Please respond: {current_event.get('instruction', '')}"
-        
-        elif event_type == 'teacher_feedback':
-            return current_event.get('text', current_event.get('instruction', ''))
-        
-        return "Continue the conversation..."
-    
-    def _replace_template_variables(self, template: str) -> str:
-        """Replace template variables with actual values"""
-        result = template
-        for var_name, var_value in self.conversation_state['variables'].items():
-            if var_value is not None:
-                result = result.replace(f'{{{var_name}}}', str(var_value))
-        return result
-    
+        return self.conversation_state.get_current_prompt()
     def process_student_response(self, student_response: str) -> Dict[str, Any]:
         """Process student response and return next action"""
-        if not self.scenario_data:
+        if not self.conversation_state.scenario_name:
             return {
                 'error': 'No scenario loaded',
                 'next_prompt': 'Please load a scenario first.'
             }
         
-        events = self.scenario_data['conversation_events']
-        if self.current_event_index >= len(events):
+        if self.conversation_state.is_conversation_complete():
             return {
                 'message': 'Conversation completed',
                 'next_prompt': 'Great job completing the scenario!'
             }
         
-        current_event = events[self.current_event_index]
+        current_event = self.conversation_state.get_current_event()
+        if not current_event:
+            return {
+                'error': 'No current event',
+                'next_prompt': 'Please reload the scenario.'
+            }
         
         # Only evaluate if this is a student response event
         if current_event.get('type') == 'student_response_expectation':
@@ -316,8 +273,12 @@ class LLMPrompter:
                 # Update state and move to next event
                 self._update_conversation_state(evaluation_result)
                 
+                # Load scenario data to get teacher persona
+                scenario_data = self.conversation_state._load_scenario_data()
+                teacher_persona = scenario_data.get('teacher_persona', {}) if scenario_data else {}
+                
                 # Generate positive feedback
-                feedback = self._generate_feedback_prompt(evaluation_result, self.scenario_data['teacher_persona'])
+                feedback = self._generate_feedback_prompt(evaluation_result, teacher_persona)
                 
                 return {
                     'status': 'success',
@@ -326,20 +287,23 @@ class LLMPrompter:
                     'variables_updated': evaluation_result.extracted_variables
                 }
             else:
+                # Load scenario data to get teacher persona
+                scenario_data = self.conversation_state._load_scenario_data()
+                teacher_persona = scenario_data.get('teacher_persona', {}) if scenario_data else {}
+                
                 # Provide correction and stay on same event
-                feedback = self._generate_feedback_prompt(evaluation_result, self.scenario_data['teacher_persona'])
+                feedback = self._generate_feedback_prompt(evaluation_result, teacher_persona)
                 
                 return {
                     'status': 'needs_correction',
                     'feedback': feedback,
                     'corrected_response': evaluation_result.corrected_response,
                     'next_prompt': 'Please try again.',
-                    'attempt_count': self.conversation_state['attempts']
+                    'attempt_count': self.conversation_state.attempts
                 }
         else:
             # Move to next event for non-student response events
-            self.current_event_index += 1
-            self.conversation_state['current_event_index'] = self.current_event_index
+            self.conversation_state.advance_to_next_event()
             
             return {
                 'status': 'continue',
@@ -348,33 +312,27 @@ class LLMPrompter:
     
     def get_conversation_state(self) -> Dict[str, Any]:
         """Get current conversation state"""
-        return {
-            'scenario_name': self.scenario_data.get('scenario_name', '') if self.scenario_data else '',
-            'current_event_index': self.current_event_index,
-            'variables': self.conversation_state.get('variables', {}),
-            'progress_tracking': self.conversation_state.get('progress_tracking', {}),
-            'attempts': self.conversation_state.get('attempts', 0)
-        }
+        return self.conversation_state.get_state_summary()
     
     def reset_conversation(self) -> None:
         """Reset conversation to the beginning"""
-        if self.scenario_data:
-            self.conversation_state = {
-                'variables': self.scenario_data.get('variables', {}).copy(),
-                'progress_tracking': self.scenario_data.get('progress_tracking', {}).copy(),
-                'current_event_index': 0,
-                'attempts': 0
-            }
-            self.current_event_index = 0
-
+        self.conversation_state.reset_conversation()
 
 # Example usage and testing
 if __name__ == "__main__":
     # Example usage
-    prompter = LLMPrompter()
+    from conversation_state import ConversationState
     
-    # Load a scenario
-    prompter.load_scenario('scenarios/friend.json')
+    # Create conversation state and prompter
+    state = ConversationState()
+    prompter = LLMPrompter(
+        conversation_state=state,
+        aws_region='us-east-1',
+        model_id='amazon.titan-text-lite-v1'
+    )
+    
+    # Initialize a scenario
+    prompter.initialize_scenario('friend')
     
     # Start conversation
     print("Starting conversation...")
