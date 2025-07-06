@@ -71,11 +71,6 @@ def load_scenario():
         prompter = get_session_prompter()
         prompter.initialize_scenario(scenario)
         save_session_prompter(prompter)
-        print('--- Lambda Request Debug ---')
-        print('Headers:', dict(request.headers))
-        print('Cookies:', request.cookies)
-        print('Session:', dict(session))
-        print('---------------------------')
         return jsonify({'status': 'loaded', 'scenario': prompter.get_conversation_state()})
     except Exception as e:
         return jsonify({'error': str(e)}), 500

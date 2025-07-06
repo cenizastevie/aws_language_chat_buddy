@@ -170,6 +170,20 @@ const ChatInterface = ({ isScenarioLoaded }) => {
     }
   }
 
+  // Listen to scenario loading
+  useEffect(() => {
+    if (isScenarioLoaded) {
+      setMessages([
+        {
+          type: 'system',
+          content: 'Please send "start" when you are ready.',
+          timestamp: new Date().toISOString()
+        }
+      ])
+      setCurrentInput('')
+    }
+  }, [isScenarioLoaded])
+
   return (
     <div className="chat-container">
       <div className="chat-messages">

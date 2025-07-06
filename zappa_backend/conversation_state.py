@@ -58,6 +58,32 @@ class ConversationState:
         
         return events[self.current_event_index]
     
+    def advance_to_event(self, event_id: int) -> bool:
+        """Jump to a specific event by ID"""
+        scenario_data = self._load_scenario_data()
+        if not scenario_data:
+            return False
+        
+        events = scenario_data.get('conversation_events', [])
+        for i, event in enumerate(events):
+            if event.get('event_id') == event_id:
+                self.current_event_index = i
+                self.attempts = 0
+                return True
+        return False
+    
+    def get_event_by_id(self, event_id: int) -> Optional[Dict[str, Any]]:
+        """Get an event by its ID"""
+        scenario_data = self._load_scenario_data()
+        if not scenario_data:
+            return None
+        
+        events = scenario_data.get('conversation_events', [])
+        for event in events:
+            if event.get('event_id') == event_id:
+                return event
+        return None
+    
     def advance_to_next_event(self) -> None:
         """Move to the next conversation event"""
         self.current_event_index += 1
@@ -108,6 +134,26 @@ class ConversationState:
             return current_event.get('text', current_event.get('instruction', ''))
         
         return "Continue the conversation..."
+    
+    def current_event_expects_input(self) -> bool:
+        """Check if the current event expects student input"""
+        current_event = self.get_current_event()
+        if not current_event:
+            return False
+        return current_event.get('expecting_input', False)
+    
+    def validate_event_sequence(self) -> bool:
+        """Validate that event IDs are sequential and match array indices"""
+        scenario_data = self._load_scenario_data()
+        if not scenario_data:
+            return False
+        
+        events = scenario_data.get('conversation_events', [])
+        for i, event in enumerate(events):
+            if event.get('event_id') != i:
+                print(f"Event ID mismatch: expected {i}, got {event.get('event_id')}")
+                return False
+        return True
     
     def is_conversation_complete(self) -> bool:
         """Check if the conversation is complete"""

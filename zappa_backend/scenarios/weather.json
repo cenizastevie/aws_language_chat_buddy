@@ -18,28 +18,40 @@
   },
   "conversation_events": [
     {
-      "event_id": "greeting",
+      "event_id": 0,
+      "expecting_input": false,
       "type": "teacher_initial_prompt",
       "text": "Hello, my name is Stevie! I'll be your language teacher for today, and our topic is **weather**. Are you ready to begin?"
     },
     {
-      "event_id": "introduction",
+      "event_id": 1,
+      "expecting_input": false,
       "type": "teacher_guidance_and_role_setup",
       "text": "Great! For our first role-play, I'll act as your friend **Stacy**, who's coming home to your city. Can you tell me your **name** and your **city** in English, please?"
     },
     {
-      "event_id": "simulation_question",
-      "type": "role_play_prompt_stacy",
-      "text_template": "Hello {name}, I'll be arriving in {city} at 8:00 AM. Do you know what the weather will be like when I arrive?"
+      "event_id": 2,
+      "expecting_input": true,
+      "type": "student_response_expectation",
+      "instruction": "Student is expected to say their name and city.",
+      "evaluation_focus": ["saying 'My name is...' and 'I live in...'"]
     },
     {
-      "event_id": "simulation_response",
+      "event_id": 3,
+      "expecting_input": false,
+      "type": "role_play_prompt_stacy",
+      "text_template": "Hello {user_name}, I'll be arriving in {user_city} at 8:00 AM. Do you know what the weather will be like when I arrive?"
+    },
+    {
+      "event_id": 4,
+      "expecting_input": true,
       "type": "student_response_expectation",
       "instruction": "Student is expected to provide weather information for their city.",
       "evaluation_focus": ["weather vocabulary", "future tense", "descriptive adjectives"]
     },
     {
-      "event_id": "teacher_feedback_1",
+      "event_id": 5,
+      "expecting_input": false,
       "type": "teacher_feedback",
       "instruction": "Provide constructive feedback on the student's weather description, focusing on vocabulary and grammar, then ask for more details or a follow-up question related to weather."
     }

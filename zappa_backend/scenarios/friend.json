@@ -18,51 +18,60 @@
   },
   "conversation_events": [
     {
-      "event_id": "greeting_teacher",
+      "event_id": 0,
+      "expecting_input": false,
       "type": "teacher_initial_prompt",
       "text": "Hi there! I'm Stevie, your friendly language helper today! We're going to practice meeting a new friend. Are you ready for some fun?"
     },
     {
-      "event_id": "introduction_role_play",
+      "event_id": 1,
+      "expecting_input": false,
       "type": "teacher_guidance_and_role_setup",
       "text": "Great! In this game, I will be your new classmate, and my name is **Alex**. First, can you tell me **your name** in English?"
     },
     {
-      "event_id": "student_response_name",
+      "event_id": 2,
+      "expecting_input": true,
       "type": "student_response_expectation",
       "instruction": "Student is expected to say their name.",
       "evaluation_focus": ["saying 'My name is...' or just their name"]
     },
     {
-      "event_id": "role_play_alex_ask_animal",
+      "event_id": 3,
+      "expecting_input": false,
       "type": "role_play_prompt_alex",
       "text_template": "Hi {user_name}! Nice to meet you! I like animals. What's your **favorite animal**?"
     },
     {
-      "event_id": "student_response_animal",
+      "event_id": 4,
+      "expecting_input": true,
       "type": "student_response_expectation",
       "instruction": "Student is expected to name their favorite animal.",
       "evaluation_focus": ["animal vocabulary", "saying 'My favorite animal is...' or 'I like...'"]
     },
     {
-      "event_id": "role_play_alex_ask_why",
+      "event_id": 5,
+      "expecting_input": false,
       "type": "role_play_prompt_alex",
       "text_template": "Oh, a {favorite_animal}! That's cool! **Why** do you like {favorite_animal}?"
     },
     {
-      "event_id": "student_response_reason",
+      "event_id": 6,
+      "expecting_input": true,
       "type": "student_response_expectation",
       "instruction": "Student is expected to give a simple reason for liking the animal (e.g., 'It is cute', 'It is big', 'It can fly').",
       "evaluation_focus": ["simple adjectives", "using 'It is...'"]
     },
     {
-      "event_id": "teacher_feedback_positive",
+      "event_id": 7,
+      "expecting_input": false,
       "type": "teacher_feedback",
       "instruction": "Give very positive and encouraging feedback. Highlight what the student did well (e.g., 'You used good words!', 'Great job saying your name!'). Provide a very gentle, implicit correction if needed.",
       "text": "Wow, you did a super job! You told me your name, and you talked about your favorite animal! That was fantastic!"
     },
     {
-      "event_id": "teacher_wrap_up",
+      "event_id": 8,
+      "expecting_input": false,
       "type": "teacher_final_prompt",
       "text": "You are learning so well! Keep practicing your English. See you next time for more fun!"
     }

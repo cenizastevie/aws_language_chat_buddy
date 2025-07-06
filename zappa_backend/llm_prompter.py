@@ -48,10 +48,30 @@ class LLMPrompter:
         """Initialize a new scenario"""
         try:
             self.conversation_state.initialize_scenario(scenario_name)
+            # Validate event sequence
+            if not self.conversation_state.validate_event_sequence():
+                logger.warning(f"Event sequence validation failed for scenario: {scenario_name}")
             logger.info(f"Initialized scenario: {scenario_name}")
         except Exception as e:
             logger.error(f"Error initializing scenario: {str(e)}")
             raise
+    
+    def jump_to_event(self, event_id: int) -> bool:
+        """Jump to a specific event by ID"""
+        return self.conversation_state.advance_to_event(event_id)
+    
+    def get_current_event_info(self) -> Dict[str, Any]:
+        """Get information about the current event"""
+        current_event = self.conversation_state.get_current_event()
+        if not current_event:
+            return {'event_id': None, 'expecting_input': False, 'type': None}
+        
+        return {
+            'event_id': current_event.get('event_id'),
+            'expecting_input': current_event.get('expecting_input', False),
+            'type': current_event.get('type'),
+            'index': self.conversation_state.current_event_index
+        }
     
     def _invoke_llm(self, prompt: str, max_tokens: int = 1000) -> str:
         """Invoke AWS Bedrock LLM with the given prompt, supporting both Claude and Titan."""
@@ -165,7 +185,7 @@ class LLMPrompter:
             
             # Extract variables if needed
             extracted_variables = {}
-            if current_event.get('type') == 'student_response_expectation':
+            if current_event.get('expecting_input', False):
                 extraction_prompt = self._create_variable_extraction_prompt(student_response, current_event)
                 extraction_result = self._invoke_llm(extraction_prompt)
                 
@@ -266,7 +286,7 @@ class LLMPrompter:
             }
         
         # Only evaluate if this is a student response event
-        if current_event.get('type') == 'student_response_expectation':
+        if current_event.get('expecting_input', False):
             evaluation_result = self._evaluate_student_response(student_response, current_event)
             
             if evaluation_result.is_valid:
