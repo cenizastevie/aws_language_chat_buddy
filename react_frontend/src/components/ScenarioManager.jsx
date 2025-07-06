@@ -7,13 +7,13 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
   const [backendHealth, setBackendHealth] = useState(null)
   const [availableScenarios] = useState([
     { 
-      path: 'scenarios/friend.json', 
+      scenario: 'friend', 
       name: 'Friend Conversation', 
       description: 'Practice casual conversation with a friend',
       emoji: '👥'
     },
     { 
-      path: 'scenarios/weather.json', 
+      scenario: 'weather', 
       name: 'Weather Talk', 
       description: 'Learn to discuss weather and climate',
       emoji: '🌤️'
@@ -45,10 +45,10 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
     }
   }
 
-  const loadScenario = async (scenarioPath) => {
+  const loadScenario = async (scenario) => {
     setIsLoading(true)
     try {
-      const response = await apiService.loadScenario(scenarioPath)
+      const response = await apiService.loadScenario(scenario)
       console.log('Scenario loaded:', response.data)
       
       // Refresh session info
@@ -125,7 +125,7 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
           {availableScenarios.map((scenario, index) => (
             <div key={index} className="scenario-item">
               <button
-                onClick={() => loadScenario(scenario.path)}
+                onClick={() => loadScenario(scenario.scenario)}
                 className="btn btn-primary"
                 disabled={isLoading}
                 style={{ width: '100%', marginBottom: '0.5rem' }}

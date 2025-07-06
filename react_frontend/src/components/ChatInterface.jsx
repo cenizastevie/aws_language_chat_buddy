@@ -108,7 +108,7 @@ const ChatInterface = ({ isScenarioLoaded }) => {
       } else {
         systemMessage = {
           ...systemMessage,
-          content: result.feedback || 'Please continue...'
+          content: result.next_prompt || result.feedback || 'Please continue...'
         }
       }
       
@@ -210,6 +210,7 @@ const ChatInterface = ({ isScenarioLoaded }) => {
               placeholder={isScenarioLoaded ? "Type your response here..." : "Please load a scenario first..."}
               disabled={isLoading || !isScenarioLoaded}
               autoComplete="off"
+              style={{ color: '#000', background: '#fff' }}
             />
             <button 
               type="submit" 

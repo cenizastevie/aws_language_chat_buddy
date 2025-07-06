@@ -8,6 +8,8 @@ from uuid import uuid4
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
+is_local_dev = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is None
+
 
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
@@ -61,19 +63,13 @@ def save_session_prompter(prompter):
 @app.route('/load_scenario', methods=['POST'])
 def load_scenario():
     data = request.get_json()
-    scenario_name = data.get('scenario_name')
-    scenario_path = data.get('scenario_path')
-    if scenario_name:
-        pass
-    elif scenario_path:
-        import os
-        base_name = os.path.basename(scenario_path)
-        scenario_name = os.path.splitext(base_name)[0]
-    else:
+    scenario = data.get('scenario')
+    print(scenario)
+    if not scenario:
         return jsonify({'error': 'Missing scenario_name or scenario_path'}), 400
     try:
         prompter = get_session_prompter()
-        prompter.initialize_scenario(scenario_name)
+        prompter.initialize_scenario(scenario)
         save_session_prompter(prompter)
         print('--- Lambda Request Debug ---')
         print('Headers:', dict(request.headers))
