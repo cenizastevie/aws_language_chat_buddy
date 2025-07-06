@@ -20,8 +20,18 @@ const ChatInterface = ({ isScenarioLoaded }) => {
 
   // Load initial prompt when component mounts
   useEffect(() => {
-    loadCurrentPrompt()
-    loadConversationState()
+    const clearOnReload = async () => {
+      try {
+        await apiService.clearSession()
+        setMessages([])
+        setConversationState(null)
+        setCurrentPrompt('')
+      } catch (error) {
+      }
+      loadCurrentPrompt()
+      loadConversationState()
+    }
+    clearOnReload()
   }, [])
 
   const loadCurrentPrompt = async () => {

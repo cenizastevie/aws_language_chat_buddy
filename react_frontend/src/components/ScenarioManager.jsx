@@ -18,12 +18,22 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
       description: 'Learn to discuss weather and climate',
       emoji: '🌤️'
     },
-    // Add more scenarios as needed
   ])
 
   useEffect(() => {
-    loadSessionInfo()
-    checkHealth()
+    const clearOnReload = async () => {
+      try {
+        await apiService.clearSession()
+        setSessionInfo(null)
+        if (onScenarioLoaded) {
+          onScenarioLoaded(null)
+        }
+      } catch (error) {
+      }
+      loadSessionInfo()
+      checkHealth()
+    }
+    clearOnReload()
   }, [])
 
   const loadSessionInfo = async () => {
@@ -50,16 +60,10 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
     try {
       const response = await apiService.loadScenario(scenario)
       console.log('Scenario loaded:', response.data)
-      
-      // Refresh session info
       await loadSessionInfo()
-      
-      // Notify parent component
       if (onScenarioLoaded) {
         onScenarioLoaded(response.data)
       }
-      
-      // Show success message
       alert(`✅ Scenario loaded successfully: ${response.data.scenario.scenario_name}`)
     } catch (error) {
       console.error('Error loading scenario:', error)
@@ -74,12 +78,9 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
     try {
       await apiService.clearSession()
       await loadSessionInfo()
-      
-      // Notify parent component
       if (onScenarioLoaded) {
         onScenarioLoaded(null)
       }
-      
       alert('🗑️ Session cleared successfully!')
     } catch (error) {
       console.error('Error clearing session:', error)
@@ -93,7 +94,6 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
     setIsLoading(true)
     await checkHealth()
     setIsLoading(false)
-    
     if (backendHealth?.status === 'healthy') {
       alert(`✅ Backend is healthy: ${backendHealth.data.status}`)
     } else {
@@ -104,8 +104,6 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
   return (
     <div className="scenario-section">
       <h2>🎯 Scenario Management</h2>
-      
-      {/* Backend Health Status */}
       {backendHealth && (
         <div style={{ 
           marginBottom: '1rem', 
@@ -118,7 +116,6 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
           {backendHealth.status === 'healthy' ? '✅ Backend Connected' : '❌ Backend Disconnected'}
         </div>
       )}
-      
       <div style={{ marginBottom: '1.5rem' }}>
         <h3>📚 Available Scenarios</h3>
         <div className="scenario-buttons">
@@ -137,7 +134,6 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
           ))}
         </div>
       </div>
-
       <div style={{ marginBottom: '1.5rem' }}>
         <h3>⚙️ Session Management</h3>
         <div className="scenario-buttons">
@@ -157,7 +153,6 @@ const ScenarioManager = ({ onScenarioLoaded }) => {
           </button>
         </div>
       </div>
-
       {sessionInfo && (
         <div className="status-info">
           <h3>📋 Session Information</h3>
