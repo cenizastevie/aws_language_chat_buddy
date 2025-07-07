@@ -68,11 +68,7 @@ A minimal deployment script for the static frontend using the `simple-frontend.y
 STACK_NAME=language-chat-frontend-simple
 BUCKET_NAME=your-unique-s3-bucket-name
 
-aws cloudformation deploy \
-  --template-file infrastructure/simple-frontend.yaml \
-  --stack-name $STACK_NAME \
-  --parameter-overrides BucketName=$BUCKET_NAME \
-  --capabilities CAPABILITY_NAMED_IAM
+aws cloudformation deploy --template-file infrastructure/simple-frontend.yaml --stack-name aws-language-buddy-s3  --capabilities CAPABILITY_NAMED_IAM       
 
 aws s3 sync vite_react_frontend/dist s3://$BUCKET_NAME --delete
 ```

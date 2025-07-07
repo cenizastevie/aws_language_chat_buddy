@@ -1,106 +1,53 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Simple static website hosting for AWS Language Chat Buddy React Frontend'
 
-Parameters:
-  ProjectName:
-    Type: String
-    Default: aws-language-chat-buddy
-    Description: Name of the project
-
-  Environment:
-    Type: String
-    Default: dev
-    AllowedValues: [dev, staging, prod]
-    Description: Environment name
 
 Resources:
   # S3 Bucket for hosting static website
-  WebsiteBucket:
+  AWSLanguageBuddyReactWebsite:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${ProjectName}-frontend-${Environment}'
+      BucketName: aws-language-chat-buddy-frontend
       WebsiteConfiguration:
         IndexDocument: index.html
-        ErrorDocument: index.html
+        ErrorDocument: error.html
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
         IgnorePublicAcls: false
         RestrictPublicBuckets: false
-      Tags:
-        - Key: Project
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - HEAD
+            AllowedOrigins:
+              - "*"
+            MaxAge: 3600
 
-  # Bucket policy to allow public read access
-  WebsiteBucketPolicy:
+  AWSLanguageBuddyReactWebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref WebsiteBucket
+      Bucket: !Ref AWSLanguageBuddyReactWebsite
       PolicyDocument:
         Statement:
           - Sid: PublicReadGetObject
             Effect: Allow
-            Principal: '*'
+            Principal: "*"
             Action: s3:GetObject
-            Resource: !Sub '${WebsiteBucket}/*'
-
-  # CloudFront distribution for global CDN
-  CloudFrontDistribution:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        Origins:
-          - Id: S3Origin
-            DomainName: !GetAtt WebsiteBucket.RegionalDomainName
-            CustomOriginConfig:
-              HTTPPort: 80
-              HTTPSPort: 443
-              OriginProtocolPolicy: http-only
-        Enabled: true
-        DefaultRootObject: index.html
-        DefaultCacheBehavior:
-          TargetOriginId: S3Origin
-          ViewerProtocolPolicy: redirect-to-https
-          AllowedMethods: [GET, HEAD]
-          CachedMethods: [GET, HEAD]
-          Compress: true
-          ForwardedValues:
-            QueryString: false
-            Cookies:
-              Forward: none
-        CustomErrorResponses:
-          - ErrorCode: 404
-            ResponseCode: 200
-            ResponsePagePath: /index.html
-          - ErrorCode: 403
-            ResponseCode: 200
-            ResponsePagePath: /index.html
-        PriceClass: PriceClass_100
-        Comment: !Sub '${ProjectName} Static Website CDN'
+            Resource: !Sub "arn:aws:s3:::${AWSLanguageBuddyReactWebsite}/*"
 
 Outputs:
   WebsiteURL:
     Description: URL of the static website
-    Value: !GetAtt WebsiteBucket.WebsiteURL
+    Value: !GetAtt AWSLanguageBuddyReactWebsite.WebsiteURL
     Export:
-      Name: !Sub '${AWS::StackName}-WebsiteURL'
-
-  CloudFrontURL:
-    Description: CloudFront distribution URL
-    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
-    Export:
-      Name: !Sub '${AWS::StackName}-CloudFrontURL'
+      Name: AWSLanguageBuddyReactWebsiteURL
 
   BucketName:
     Description: S3 bucket name for uploading files
-    Value: !Ref WebsiteBucket
+    Value: !Ref AWSLanguageBuddyReactWebsite
     Export:
-      Name: !Sub '${AWS::StackName}-BucketName'
-
-  DistributionId:
-    Description: CloudFront distribution ID for cache invalidation
-    Value: !Ref CloudFrontDistribution
-    Export:
-      Name: !Sub '${AWS::StackName}-DistributionId'
+      Name: AWSLanguageBuddyReactWebsite
