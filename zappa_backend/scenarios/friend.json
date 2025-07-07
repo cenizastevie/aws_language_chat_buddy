@@ -26,34 +26,20 @@
     },
     {
       "event_id": 1,
-      "expecting_input": false,
-      "text_template": "Hi {name}! Nice to meet you! I like animals. What's your **favorite animal**?"
-    },
-    {
-      "event_id": 2,
       "expecting_input": true,
+      "text_template": "Hi {name}! Nice to meet you! I like animals. What's your favorite animal?",
       "instruction": "Student is expected to name their favorite animal.",
       "evaluation_focus": ["animal vocabulary", "saying 'My favorite animal is...' or 'I like...'"]
     },
     {
-      "event_id": 3,
-      "expecting_input": false,
-      "text_template": "Oh, a {favorite_animal}! That's cool! **Why** do you like {favorite_animal}?"
-    },
-    {
-      "event_id": 4,
+      "event_id": 2,
       "expecting_input": true,
       "instruction": "Student is expected to give a simple reason for liking the animal (e.g., 'It is cute', 'It is big', 'It can fly').",
-      "evaluation_focus": ["simple adjectives", "using 'It is...'"]
+      "evaluation_focus": ["simple adjectives", "using 'It is...'"],
+      "text_template": "Oh, you like {favorite_animal}! That's cool! Why do you like {favorite_animal}?"
     },
     {
-      "event_id": 5,
-      "expecting_input": false,
-      "instruction": "Give very positive and encouraging feedback. Highlight what the student did well (e.g., 'You used good words!', 'Great job saying your name!'). Provide a very gentle, implicit correction if needed.",
-      "text": "Wow, you did a super job! You told me your name, and you talked about your favorite animal! That was fantastic!"
-    },
-    {
-      "event_id": 6,
+      "event_id": 3,
       "expecting_input": false,
       "text": "You are learning so well! Keep practicing your English. See you next time for more fun!"
     }

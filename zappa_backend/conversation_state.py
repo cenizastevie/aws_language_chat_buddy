@@ -117,22 +117,12 @@ class ConversationState:
         if not current_event:
             return "Conversation completed! Great job!"
         
-        event_type = current_event.get('type', '')
-        
-        if event_type in ['teacher_initial_prompt', 'teacher_guidance_and_role_setup', 'teacher_final_prompt']:
+        if current_event.get('text'):
+            # This is a direct text prompt (teacher initial, guidance, feedback, or final)
             return current_event.get('text', '')
-        
-        elif event_type in ['role_play_prompt_alex', 'role_play_prompt_stacy']:
-            # Handle template replacement
-            text_template = current_event.get('text_template', current_event.get('text', ''))
+        elif current_event.get('text_template'):
+            text_template = current_event.get('text_template', '')
             return self.replace_template_variables(text_template)
-        
-        elif event_type == 'student_response_expectation':
-            return f"Please respond: {current_event.get('instruction', '')}"
-        
-        elif event_type == 'teacher_feedback':
-            return current_event.get('text', current_event.get('instruction', ''))
-        
         return "Continue the conversation..."
     
     def current_event_expects_input(self) -> bool:

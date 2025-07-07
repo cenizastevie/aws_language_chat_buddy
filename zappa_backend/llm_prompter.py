@@ -223,10 +223,40 @@ class LLMPrompter:
                 next_prompt=None
             )
     
+    def _generate_feedback_prompt(self, evaluation_result: EvaluationResult, teacher_persona: Dict[str, Any]) -> str:
+        """Generate appropriate feedback based on evaluation result"""
+        persona_tone = teacher_persona.get('tone', 'friendly and encouraging')
+        
+        if evaluation_result.response_type == ResponseType.CORRECT:
+            feedback_prompt = f"""
+            You are {teacher_persona.get('name', 'a teacher')} with a {persona_tone} personality.
+            The student gave a correct response. Provide positive, encouraging feedback.
+            Keep it brief and enthusiastic.
+            """
+        elif evaluation_result.response_type == ResponseType.GRAMMAR_ERROR:
+            feedback_prompt = f"""
+            You are {teacher_persona.get('name', 'a teacher')} with a {persona_tone} personality.
+            The student made a grammar error. 
+            
+            Original response: "{evaluation_result.corrected_response}"
+            Corrected version: "{evaluation_result.corrected_response}"
+            
+            Provide gentle correction with encouragement. Say the corrected version and ask them to try again.
+            """
+        else:
+            feedback_prompt = f"""
+            You are {teacher_persona.get('name', 'a teacher')} with a {persona_tone} personality.
+            The student's response was incomplete or unclear.
+            
+            Provide gentle guidance and ask them to try again with more specific direction.
+            """
+        
+        return self._invoke_llm(feedback_prompt)
     
     def _update_conversation_state(self, evaluation_result: EvaluationResult) -> None:
         """Update conversation state based on evaluation result"""
         if evaluation_result.is_valid:
+            print(f"Updating conversation state with variables: {evaluation_result.extracted_variables}")
             # Update variables
             self.conversation_state.update_variables(evaluation_result.extracted_variables)
             
@@ -270,6 +300,7 @@ class LLMPrompter:
         # Only evaluate if this is a student response event
         if current_event.get('expecting_input', True):
             evaluation_result = self._evaluate_student_response(student_response, current_event)
+            
             if evaluation_result.is_valid:
                 # Update state and move to next event
                 self._update_conversation_state(evaluation_result)
@@ -277,7 +308,9 @@ class LLMPrompter:
                 # Load scenario data to get teacher persona
                 scenario_data = self.conversation_state._load_scenario_data()
                 teacher_persona = scenario_data.get('teacher_persona', {}) if scenario_data else {}
+                # return None
                 # Generate positive feedback
+                # feedback = self._generate_feedback_prompt(evaluation_result, teacher_persona)
                 
                 return {
                     'status': 'success',
@@ -289,8 +322,8 @@ class LLMPrompter:
                 # Load scenario data to get teacher persona
                 scenario_data = self.conversation_state._load_scenario_data()
                 teacher_persona = scenario_data.get('teacher_persona', {}) if scenario_data else {}
-                
-                
+
+                feedback = self._generate_feedback_prompt(evaluation_result, teacher_persona)
                 return {
                     'status': 'needs_correction',
                     'feedback': evaluation_result.feedback,
