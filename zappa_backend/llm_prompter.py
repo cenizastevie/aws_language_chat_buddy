@@ -64,12 +64,14 @@ class LLMPrompter:
         """Get information about the current event"""
         current_event = self.conversation_state.get_current_event()
         if not current_event:
-            return {'event_id': None, 'expecting_input': False, 'type': None}
+            return {'event_id': None, 'expecting_input': False, 'has_template': False}
         
         return {
             'event_id': current_event.get('event_id'),
             'expecting_input': current_event.get('expecting_input', False),
-            'type': current_event.get('type'),
+            'has_template': bool(current_event.get('text_template')),
+            'has_text': bool(current_event.get('text')),
+            'has_instruction': bool(current_event.get('instruction')),
             'index': self.conversation_state.current_event_index
         }
     
@@ -116,29 +118,21 @@ class LLMPrompter:
             raise
     
     def _create_grammar_check_prompt(self, student_response: str, expected_focus: List[str]) -> str:
-        """Create a prompt for grammar checking and correction"""
+        """Create a prompt for grammar checking and correction, formatted for simpler LLMs like Titan Lite."""
         focus_areas = ", ".join(expected_focus)
-        
-        prompt = f"""
-        You are an English language teacher helping a student learn English. 
-        
-        Student's response: "{student_response}"
-        
-        Focus areas for this exercise: {focus_areas}
-        
-        Please analyze the student's response and provide:
-        1. Is the grammar correct? (Yes/No)
-        2. If incorrect, provide the corrected version
-        3. Brief explanation of any errors (keep it simple and encouraging)
-        4. Rate the response as: CORRECT, GRAMMAR_ERROR, INCOMPLETE, or INVALID
-        
-        Format your response as JSON:
-        {{
-            "is_correct": boolean,
+
+        prompt = f"""You are an English language teacher helping a student improve their grammar.
+            Please respond ONLY in the following JSON format:
+            {{
+            "is_correct": true or false,
             "corrected_response": "corrected version if needed",
             "explanation": "brief explanation",
-            "rating": "CORRECT|GRAMMAR_ERROR|INCOMPLETE|INVALID"
-        }}
+            "rating": "CORRECT or GRAMMAR_ERROR or INCOMPLETE or INVALID"
+            }}
+
+            Student's response: \"{student_response}\"
+
+            Focus areas: {focus_areas}
         """
         return prompt
     
@@ -183,21 +177,31 @@ class LLMPrompter:
                     "rating": "INVALID"
                 }
             
-            # Extract variables if needed
+            # Determine response type
+            response_type = ResponseType(grammar_data['rating'].lower())
+            is_valid = grammar_data['is_correct'] and response_type == ResponseType.CORRECT
+            
+            # If grammar is not correct, return immediately so student knows
+            if not grammar_data.get('is_correct', False):
+                return EvaluationResult(
+                    response_type=response_type,
+                    is_valid=is_valid,
+                    extracted_variables={},
+                    feedback=grammar_data.get('explanation', ''),
+                    corrected_response=grammar_data.get('corrected_response'),
+                    next_prompt=None
+                )
+            
+            # Extract variables only if grammar is correct
             extracted_variables = {}
             if current_event.get('expecting_input', False):
                 extraction_prompt = self._create_variable_extraction_prompt(student_response, current_event)
                 extraction_result = self._invoke_llm(extraction_prompt)
-                
                 try:
                     extraction_data = json.loads(extraction_result)
                     extracted_variables = extraction_data.get('extracted_info', {})
                 except json.JSONDecodeError:
                     logger.error(f"Failed to parse extraction result: {extraction_result}")
-            
-            # Determine response type
-            response_type = ResponseType(grammar_data['rating'].lower())
-            is_valid = grammar_data['is_correct'] and response_type == ResponseType.CORRECT
             
             return EvaluationResult(
                 response_type=response_type,
@@ -219,35 +223,6 @@ class LLMPrompter:
                 next_prompt=None
             )
     
-    def _generate_feedback_prompt(self, evaluation_result: EvaluationResult, teacher_persona: Dict[str, Any]) -> str:
-        """Generate appropriate feedback based on evaluation result"""
-        persona_tone = teacher_persona.get('tone', 'friendly and encouraging')
-        
-        if evaluation_result.response_type == ResponseType.CORRECT:
-            feedback_prompt = f"""
-            You are {teacher_persona.get('name', 'a teacher')} with a {persona_tone} personality.
-            The student gave a correct response. Provide positive, encouraging feedback.
-            Keep it brief and enthusiastic.
-            """
-        elif evaluation_result.response_type == ResponseType.GRAMMAR_ERROR:
-            feedback_prompt = f"""
-            You are {teacher_persona.get('name', 'a teacher')} with a {persona_tone} personality.
-            The student made a grammar error. 
-            
-            Original response: "{evaluation_result.corrected_response}"
-            Corrected version: "{evaluation_result.corrected_response}"
-            
-            Provide gentle correction with encouragement. Say the corrected version and ask them to try again.
-            """
-        else:
-            feedback_prompt = f"""
-            You are {teacher_persona.get('name', 'a teacher')} with a {persona_tone} personality.
-            The student's response was incomplete or unclear.
-            
-            Provide gentle guidance and ask them to try again with more specific direction.
-            """
-        
-        return self._invoke_llm(feedback_prompt)
     
     def _update_conversation_state(self, evaluation_result: EvaluationResult) -> None:
         """Update conversation state based on evaluation result"""
@@ -264,6 +239,7 @@ class LLMPrompter:
     def get_current_prompt(self) -> str:
         """Get the current prompt for the conversation"""
         return self.conversation_state.get_current_prompt()
+    
     def process_student_response(self, student_response: str) -> Dict[str, Any]:
         """Process student response and return next action"""
         if not self.conversation_state.scenario_name:
@@ -285,10 +261,15 @@ class LLMPrompter:
                 'next_prompt': 'Please reload the scenario.'
             }
         
+        if student_response.lower().strip() == 'start':
+            return {
+                'status': 'continue',
+                'next_prompt': self.get_current_prompt()
+            }
+    
         # Only evaluate if this is a student response event
-        if current_event.get('expecting_input', False):
+        if current_event.get('expecting_input', True):
             evaluation_result = self._evaluate_student_response(student_response, current_event)
-            
             if evaluation_result.is_valid:
                 # Update state and move to next event
                 self._update_conversation_state(evaluation_result)
@@ -296,13 +277,11 @@ class LLMPrompter:
                 # Load scenario data to get teacher persona
                 scenario_data = self.conversation_state._load_scenario_data()
                 teacher_persona = scenario_data.get('teacher_persona', {}) if scenario_data else {}
-                
                 # Generate positive feedback
-                feedback = self._generate_feedback_prompt(evaluation_result, teacher_persona)
                 
                 return {
                     'status': 'success',
-                    'feedback': feedback,
+                    'feedback': evaluation_result.feedback,
                     'next_prompt': self.get_current_prompt(),
                     'variables_updated': evaluation_result.extracted_variables
                 }
@@ -311,12 +290,10 @@ class LLMPrompter:
                 scenario_data = self.conversation_state._load_scenario_data()
                 teacher_persona = scenario_data.get('teacher_persona', {}) if scenario_data else {}
                 
-                # Provide correction and stay on same event
-                feedback = self._generate_feedback_prompt(evaluation_result, teacher_persona)
                 
                 return {
                     'status': 'needs_correction',
-                    'feedback': feedback,
+                    'feedback': evaluation_result.feedback,
                     'corrected_response': evaluation_result.corrected_response,
                     'next_prompt': 'Please try again.',
                     'attempt_count': self.conversation_state.attempts

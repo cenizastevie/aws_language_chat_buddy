@@ -32,7 +32,7 @@ CORS(
 )
 
 def get_prompter():
-    model_id = os.environ.get('MODEL_ID', 'amazon.titan-text-lite-v1')
+    model_id = os.environ.get('MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
     region = os.environ.get('AWS_REGION', 'us-east-1')
     state = ConversationState()
     return LLMPrompter(state, aws_region=region, model_id=model_id)
@@ -42,7 +42,7 @@ def get_session_prompter():
         try:
             state_data = session['conversation_state']
             conversation_state = ConversationState.from_dict(state_data)
-            model_id = os.environ.get('MODEL_ID', 'amazon.titan-text-lite-v1')
+            model_id = os.environ.get('MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
             region = os.environ.get('AWS_REGION', 'us-east-1')
             return LLMPrompter(conversation_state, aws_region=region, model_id=model_id)
         except Exception as e:
